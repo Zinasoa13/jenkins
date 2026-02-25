@@ -6,7 +6,7 @@
   vars:
     image_name: ubuntu
     image_tag: "24.04"
-    dockerhub_repo: "{{ lookup('env','DOCKERHUB_USER') | trim }}"
+    dockerhub_repo: "{{ lookup('env','DOCKERHUB_USER')}}"
     build_tag: "{{ lookup('env','IMAGE_TAG') }}"            # Jenkins BUILD_ID
 
   tasks:
@@ -21,6 +21,8 @@
         name: "{{ image_name }}"
         tag: "{{ image_tag }}"
         source: pull
+    - debug:
+        msg: "Tagging {{ image_name }}:{{ image_tag }} as {{ dockerhub_repo }}/{{ image_name }}:{{ build_tag }}"
 
     - name: Tag Ubuntu image with Jenkins BUILD_ID
       community.docker.docker_image:
