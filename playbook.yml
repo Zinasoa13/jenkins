@@ -24,7 +24,8 @@
 
     - name: Tag Ubuntu image with Jenkins BUILD_ID
       community.docker.docker_image:
-        name: "{{ dockerhub_repo }}/{{ image_name }}"
+        name: "{{ image_name }}:{{ image_tag }}"
+        repo: "{{ dockerhub_repo }}/{{ image_name }}"
         tag: "{{ build_tag }}"
         source: local
 
