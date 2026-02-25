@@ -6,7 +6,7 @@
   vars:
     image_name: ubuntu
     image_tag: "24.04"
-    dockerhub_repo: "{{ lookup('env','DOCKERHUB_USER') }}"  # Docker Hub username
+    dockerhub_repo: "{{ lookup('env','DOCKERHUB_USER') | trim }}"
     build_tag: "{{ lookup('env','IMAGE_TAG') }}"            # Jenkins BUILD_ID
 
   tasks:
