@@ -4,8 +4,8 @@ pipeline {
     environment {
         PLAYBOOK   = 'playbook.yml'
         GIT_BRANCH = 'main'
-        DOCKERHUB_USER = credentials('dockerhub-username') // Jenkins credentials ID
-        DOCKERHUB_PASS = credentials('dockerhub-password')
+        DOCKERHUB_USER = credentials('dockerhub-credentials') // Jenkins credentials ID
+        DOCKERHUB_PASS = credentials('dockerhub-credentials')
     }
 
     triggers {
