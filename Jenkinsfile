@@ -4,8 +4,6 @@ pipeline {
     environment {
         PLAYBOOK   = 'playbook.yml'
         GIT_BRANCH = 'main'
-        DOCKERHUB_USER = credentials('dockerhub-credentials') // Jenkins credentials ID
-        DOCKERHUB_PASS = credentials('dockerhub-credentials')
     }
 
     triggers {
@@ -16,6 +14,18 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+            }
+        }
+	stage('Docker Login') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DOCKERHUB_USER',
+                    passwordVariable: 'DOCKERHUB_PASS'
+                )]) {
+                    sh 'echo Logging into Docker Hub'
+                    sh 'docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASS'
+                }
             }
         }
 
