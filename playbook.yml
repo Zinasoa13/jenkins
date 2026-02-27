@@ -34,19 +34,13 @@
       ansible.builtin.debug:
         msg: "Tagging {{ image_name }}:{{ image_tag }} as {{ dockerhub_repo }}/{{ image_name }}:{{ build_tag }}"
 
-    - name: Tag Ubuntu image with Jenkins BUILD_ID
+    - name: Tag and Push Ubuntu image to Docker Hub
       community.docker.docker_image:
         name: "{{ image_name }}:{{ image_tag }}"
         repository: "{{ dockerhub_repo }}/{{ image_name }}"
         tag: "{{ build_tag }}"
         source: local
-
-    - name: Push Ubuntu image to Docker Hub
-      community.docker.docker_image:
-        name: "{{ dockerhub_repo }}/{{ image_name }}"
-        tag: "{{ build_tag }}"
         push: true
-        source: local
 
     - name: Log out from Docker Hub
       community.docker.docker_login:
