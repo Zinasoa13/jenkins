@@ -35,7 +35,7 @@ pipeline {
         }
 		stage('Verify Python') {
             steps {
-                sh 'python3 --version || echo "Python n\'est pas installé"',
+                sh 'python3 --version || echo "Python n\'est pas installé"'
             }
         }
     }
