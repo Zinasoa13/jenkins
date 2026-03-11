@@ -47,23 +47,25 @@
         name: "trivy_scan_{{ item | lower }}"
         image: aquasec/trivy
         state: started
-        # On met auto_remove à false pour éviter l'erreur Ansible
-        auto_remove: false
+        auto_remove: false # Obligatoire pour lire le résultat
         volumes:
           - /var/run/docker.sock:/var/run/docker.sock
-          - "{{ lookup('env', 'PWD') }}:/reports"
-        command: >
-          image --format csv
-          --output /reports/trivy_{{ item | lower }}.csv
-          --severity {{ item }}
-          {{ dockerhub_repo }}/{{ image_name }}:{{ build_tag }}
+        # On demande à Trivy d'afficher le CSV dans la console (--quiet pour éviter les logs inutiles)
+        command: "image --quiet --format csv --severity {{ item }} {{ dockerhub_repo }}/{{ image_name }}:{{ build_tag }}"
         detach: false
       loop:
         - CRITICAL
         - MEDIUM
         - LOW
-      # On ignore les erreurs ici pour que le pipeline continue même si Trivy trouve des failles
-      ignore_errors: true
+      register: scan_results
+
+    - name: Save Scan Results to CSV files
+      ansible.builtin.copy:
+        # On prend le texte que Trivy a affiché et on le met dans un fichier
+        content: "{{ item.container.Output }}"
+        dest: "{{ ansible_env.PWD }}/trivy_{{ item.item | lower }}.csv"
+      loop: "{{ scan_results.results }}"
+      when: item.container is defined
 
     - name: Cleanup Trivy containers
       community.docker.docker_container:
@@ -75,13 +77,12 @@
         - LOW
 
     - name: List generated reports
-      ansible.builtin.shell: ls -lh trivy_*.csv
+      ansible.builtin.shell: "ls -lh {{ ansible_env.PWD }}/trivy_*.csv"
       register: ls_output
-      ignore_errors: true
 
     - name: Show reports created
       ansible.builtin.debug:
-        msg: "{{ ls_output.stdout_lines | default('Aucun fichier CSV trouvé') }}"
+        msg: "{{ ls_output.stdout_lines }}"
 
     - name: Log out from Docker Hub
       community.docker.docker_login:
