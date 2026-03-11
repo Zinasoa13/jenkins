@@ -15,21 +15,14 @@
         username: "{{ lookup('env', 'DOCKERHUB_USER') }}"
         password: "{{ lookup('env', 'DOCKERHUB_PASS') }}"
 
-    - name: Build Docker image from Dockerfile
+    - name: Build and Push Docker image
       community.docker.docker_image:
-        name: "{{ image_name }}"
-        tag: "{{ image_tag }}"
+        name: "{{ dockerhub_repo }}/{{ image_name }}"
+        tag: "{{ build_tag }}"
         build:
           path: .
           pull: true
         source: build
-
-    - name: Tag and Push Ubuntu image
-      community.docker.docker_image:
-        name: "{{ image_name }}:{{ image_tag }}"
-        repository: "{{ dockerhub_repo }}/{{ image_name }}"
-        tag: "{{ build_tag }}"
-        source: local
         push: true
 
     - name: Generate Trivy CSV Reports

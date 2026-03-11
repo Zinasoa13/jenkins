@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_TAG = "24.04-${env.BUILD_ID}"
+      D  IMAGE_TAG = "24.04-${env.BUILD_I}"
     }
 
     stages {
