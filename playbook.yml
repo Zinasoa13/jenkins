@@ -1,4 +1,4 @@
-- name: Pull and Push Ubuntu 24.04
+- name: Pull, Push and Scan Ubuntu
   hosts: localhost
   connection: local
   gather_facts: false
@@ -8,15 +8,6 @@
     image_tag: "24.04"
     dockerhub_repo: "{{ lookup('env', 'DOCKERHUB_USER') }}"
     build_tag: "{{ lookup('env', 'IMAGE_TAG') }}"
-
-  pre_tasks:
-    - name: Validate required environment variables
-      ansible.builtin.fail:
-        msg: "Required environment variable '{{ item.name }}' is not set or empty"
-      when: item.value == ""
-      loop:
-        - { name: "DOCKERHUB_USER", value: "{{ dockerhub_repo }}" }
-        - { name: "IMAGE_TAG",      value: "{{ build_tag }}" }
 
   tasks:
     - name: Log in to Docker Hub
@@ -30,11 +21,7 @@
         tag: "{{ image_tag }}"
         source: pull
 
-    - name: Debug tagging info
-      ansible.builtin.debug:
-        msg: "Tagging {{ image_name }}:{{ image_tag }} as {{ dockerhub_repo }}/{{ image_name }}:{{ build_tag }}"
-
-    - name: Tag and Push Ubuntu image to Docker Hub
+    - name: Tag and Push Ubuntu image
       community.docker.docker_image:
         name: "{{ image_name }}:{{ image_tag }}"
         repository: "{{ dockerhub_repo }}/{{ image_name }}"
@@ -50,11 +37,8 @@
         auto_remove: false
         volumes:
           - /var/run/docker.sock:/var/run/docker.sock
-        # CORRECTION : On utilise --format template avec le modèle csv.tpl
-        command: >
-          image --quiet --format template --template "@/contrib/csv.tpl"
-          --severity {{ item }}
-          {{ dockerhub_repo }}/{{ image_name }}:{{ build_tag }}
+        # On utilise le template CSV obligatoire pour ta version de Trivy
+        command: "image --quiet --format template --template @/contrib/csv.tpl --severity {{ item }} {{ dockerhub_repo }}/{{ image_name }}:{{ build_tag }}"
         detach: false
       loop:
         - CRITICAL
@@ -62,10 +46,10 @@
         - LOW
       register: scan_results
 
-    - name: Save Scan Results to CSV files
+    - name: Save reports to files
       ansible.builtin.copy:
         content: "{{ item.container.Output }}"
-        dest: "{{ ansible_env.PWD }}/trivy_{{ item.item | lower }}.csv"
+        dest: "./trivy_{{ item.item | lower }}.csv"
       loop: "{{ scan_results.results }}"
       when: item.container is defined
 
@@ -77,10 +61,6 @@
         - CRITICAL
         - MEDIUM
         - LOW
-
-    - name: Show reports created
-      ansible.builtin.debug:
-        msg: "{{ ls_output.stdout_lines }}"
 
     - name: Log out from Docker Hub
       community.docker.docker_login:
