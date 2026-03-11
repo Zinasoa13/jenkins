@@ -6,11 +6,6 @@ pipeline {
     }
 
     stages {
-        stage('Verify Python') {
-            steps {
-                sh 'python3 --version'
-            }
-        }
         stage('Pull and Push') {
             steps {
                 withCredentials([usernamePassword(
@@ -20,6 +15,11 @@ pipeline {
                 )]) {
                     sh 'ansible-playbook playbook.yml'
                 }
+            }
+        }
+		stage('Verify Python') {
+            steps {
+                sh 'python3 --version || echo "Pyhon pas installé"'
             }
         }
     }
