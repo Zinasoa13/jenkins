@@ -43,21 +43,17 @@
         push: true
 
     - name: Run Trivy Security Scan
-      community.docker.docker_container:
-        name: trivy_scan
-        image: aquasec/trivy
-        auto_remove: true
-        volumes:
-          - /var/run/docker.sock:/var/run/docker.sock
-          - /tmp/trivy-cache:/root/.cache/
-        # La commande qu'on passe au conteneur Trivy
-        command: "image --severity HIGH,CRITICAL --exit-code 1 {{ dockerhub_repo }}/{{ image_name }}:{{ build_tag }}"
-        detach: false # On attend que le scan finisse
-      register: scan_result
+      ansible.builtin.shell: >
+        docker run --rm
+        -v /var/run/docker.sock:/var/run/docker.sock
+        -v /tmp/trivy-cache:/root/.cache/
+        aquasec/trivy image --severity HIGH,CRITICAL --exit-code 1 {{ dockerhub_repo }}/{{ image_name }}:{{ build_tag }}
+      register: trivy_result
+      changed_when: false
 
     - name: Show Trivy output
       ansible.builtin.debug:
-        var: scan_result.container.Output
+        msg: "{{ trivy_result.stdout_lines }}"
 
     - name: Log out from Docker Hub
       community.docker.docker_login:
