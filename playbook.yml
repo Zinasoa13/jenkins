@@ -47,11 +47,14 @@
         name: "trivy_scan_{{ item | lower }}"
         image: aquasec/trivy
         state: started
-        auto_remove: false # Obligatoire pour lire le résultat
+        auto_remove: false
         volumes:
           - /var/run/docker.sock:/var/run/docker.sock
-        # On demande à Trivy d'afficher le CSV dans la console (--quiet pour éviter les logs inutiles)
-        command: "image --quiet --format csv --severity {{ item }} {{ dockerhub_repo }}/{{ image_name }}:{{ build_tag }}"
+        # CORRECTION : On utilise --format template avec le modèle csv.tpl
+        command: >
+          image --quiet --format template --template "@/contrib/csv.tpl"
+          --severity {{ item }}
+          {{ dockerhub_repo }}/{{ image_name }}:{{ build_tag }}
         detach: false
       loop:
         - CRITICAL
@@ -61,7 +64,6 @@
 
     - name: Save Scan Results to CSV files
       ansible.builtin.copy:
-        # On prend le texte que Trivy a affiché et on le met dans un fichier
         content: "{{ item.container.Output }}"
         dest: "{{ ansible_env.PWD }}/trivy_{{ item.item | lower }}.csv"
       loop: "{{ scan_results.results }}"
@@ -75,10 +77,6 @@
         - CRITICAL
         - MEDIUM
         - LOW
-
-    - name: List generated reports
-      ansible.builtin.shell: "ls -lh {{ ansible_env.PWD }}/trivy_*.csv"
-      register: ls_output
 
     - name: Show reports created
       ansible.builtin.debug:
