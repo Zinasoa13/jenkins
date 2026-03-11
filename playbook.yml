@@ -43,17 +43,35 @@
         push: true
 
     - name: Run Trivy Security Scan
-      ansible.builtin.shell: >
-        docker run --rm
-        -v /var/run/docker.sock:/var/run/docker.sock
-        -v /tmp/trivy-cache:/root/.cache/
-        aquasec/trivy image --severity HIGH,CRITICAL --exit-code 1 {{ dockerhub_repo }}/{{ image_name }}:{{ build_tag }}
-      register: trivy_result
-      changed_when: false
+      community.docker.docker_container:
+        name: trivy_scan
+        image: aquasec/trivy
+        state: started
+        # auto_remove: false est important ici pour récupérer les logs après
+        auto_remove: false
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+        # On ne monte pas le cache pour l'instant pour éviter les soucis de permissions
+        command: "image --severity HIGH,CRITICAL --exit-code 1 {{ dockerhub_repo }}/{{ image_name }}:{{ build_tag }}"
+        detach: false
+      register: scan_result
+      ignore_errors: true # On ignore l'erreur ici pour pouvoir nettoyer le conteneur avant de faire échouer le build
 
     - name: Show Trivy output
       ansible.builtin.debug:
-        msg: "{{ trivy_result.stdout_lines }}"
+        msg: "{{ scan_result.container.Output }}"
+      when: scan_result.container is defined
+
+    - name: Remove Trivy container (Cleanup)
+      community.docker.docker_container:
+        name: trivy_scan
+        state: absent
+
+    - name: Check Scan Result and Fail if necessary
+      ansible.builtin.fail:
+        msg: "Trivy found CRITICAL vulnerabilities! Pipeline stopped."
+      # On vérifie si l'exit code du conteneur était 1
+      when: scan_result.container.State.ExitCode != 0
 
     - name: Log out from Docker Hub
       community.docker.docker_login:
