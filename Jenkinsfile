@@ -6,6 +6,11 @@ pipeline {
     }
 
     stages {
+        stage('Verify Python') {
+            steps {
+                sh 'python3 --version'
+            }
+        }
         stage('Pull and Push') {
             steps {
                 withCredentials([usernamePassword(
