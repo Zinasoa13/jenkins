@@ -15,11 +15,14 @@
         username: "{{ lookup('env', 'DOCKERHUB_USER') }}"
         password: "{{ lookup('env', 'DOCKERHUB_PASS') }}"
 
-    - name: Pull Ubuntu 24.04
+    - name: Build Docker image from Dockerfile
       community.docker.docker_image:
         name: "{{ image_name }}"
         tag: "{{ image_tag }}"
-        source: pull
+        build:
+          path: .
+          pull: true
+        source: build
 
     - name: Tag and Push Ubuntu image
       community.docker.docker_image:
@@ -37,7 +40,7 @@
         auto_remove: false
         volumes:
           - /var/run/docker.sock:/var/run/docker.sock
-        # On utilise le template CSV obligatoire pour ta version de Trivy
+        # On scan l'image locale qui vient d'être tagguée
         command: "image --quiet --format template --template @/contrib/csv.tpl --severity {{ item }} {{ dockerhub_repo }}/{{ image_name }}:{{ build_tag }}"
         detach: false
       loop:
