@@ -27,6 +27,10 @@ pipeline {
     }
 
     post {
+		always {
+            // Cette commande permet de récupérer les fichiers CSV dans l'interface Jenkins
+            archiveArtifacts artifacts: '*.csv', fingerprint: true
+        }
         failure { echo 'Pipeline failed — Check Trivy scan or Ansible logs.' }
         success { cleanWs() }
     }
